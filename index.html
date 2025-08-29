@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Fake News Detector — Evidence-based</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <style>
+    body {
+      background: linear-gradient(135deg,#f8f9fa,#e9ecef);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-family:Segoe UI, Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .card { border-radius:1rem; max-width:900px; width:100%;}
+    textarea { resize:none; }
+    .explanation-box { background:#f1f3f5; border-left:5px solid #0d6efd; padding:1rem; border-radius:0.5rem; margin-top:1rem;}
+    .sources-box { background:#fff3cd; border-left:5px solid #ffc107; padding:1rem; border-radius:0.5rem; margin-top:1rem;}
+    .verdict-confirm { color: #0f5132; background: #d1e7dd; padding: .75rem; border-radius:.5rem; }
+    .verdict-refute { color: #842029; background: #f8d7da; padding: .75rem; border-radius:.5rem; }
+    .verdict-none { color: #664d03; background:#fff3cd; padding:.75rem; border-radius:.5rem; }
+  </style>
+</head>
+<body>
+  <div class="container py-4">
+    <div class="card shadow-lg">
+      <div class="card-header bg-primary text-white text-center">
+        <h2>📰 Fake News Detector (Evidence-based)</h2>
+        <p class="mb-0">Hybrid: style detector + news retrieval + LLM fact-checker</p>
+      </div>
+      <div class="card-body p-4">
+        <form method="POST">
+          <div class="mb-3">
+            <label for="claim" class="form-label fw-bold">Enter News Claim / Headline:</label>
+            <textarea name="claim" id="claim" class="form-control" rows="5" placeholder="Paste the claim or headline...">{{ claim }}</textarea>
+          </div>
+          <div class="d-grid mb-3">
+            <button class="btn btn-success btn-lg">🔍 Analyze</button>
+          </div>
+        </form>
+
+        {% if prediction_style %}
+        <div class="mb-3">
+          <h5>Classifier (style-based)</h5>
+          <div class="border rounded p-3">
+            <strong>Style verdict:</strong> {{ prediction_style.label }}<br/>
+            {% if prediction_style.confidence %}<strong>Confidence:</strong> {{ prediction_style.confidence }}{% endif %}
+            <p class="small text-muted mb-0">This checks language/style (clickbait/propaganda), not factual truth.</p>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if evidence_verdict %}
+        <div class="mb-3">
+          <h5>Evidence-based verdict</h5>
+
+          {% if evidence_verdict == "CONFIRMED" %}
+            <div class="verdict-confirm mb-2"><strong>CONFIRMED ✅</strong></div>
+          {% elif evidence_verdict == "REFUTED" %}
+            <div class="verdict-refute mb-2"><strong>REFUTED ❌</strong></div>
+          {% elif evidence_verdict == "NO_EVIDENCE" %}
+            <div class="verdict-none mb-2"><strong>NO EVIDENCE FOUND ⚠️</strong></div>
+          {% else %}
+            <div class="border p-2 mb-2"><strong>{{ evidence_verdict }}</strong></div>
+          {% endif %}
+
+          {% if evidence_explanation %}
+          <div class="explanation-box">
+            <h6>LLM explanation</h6>
+            <p>{{ evidence_explanation }}</p>
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        {% if sources %}
+        <div class="mb-3">
+          <h5>Top sources used for fact-checking</h5>
+          <div class="sources-box">
+            <ul class="mb-0">
+              {% for s in sources %}
+                <li>
+                  <strong>{{ s.source or "Source" }}</strong> —
+                  {% if s.url and s.url != "#" %}
+                    <a href="{{ s.url }}" target="_blank" rel="noopener noreferrer">{{ s.title }}</a>
+                  {% else %}
+                    {{ s.title }}
+                  {% endif %}
+                  {% if s.publishedAt %} <small class="text-muted">({{ s.publishedAt }})</small>{% endif %}
+                  {% if s.description %}<div class="small text-muted">{{ s.description }}</div>{% endif %}
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="text-muted small">
+          <p class="mb-0">Notes: The style classifier is trained on WeLFake (historic). The final evidence-based verdict is produced by comparing the claim to recent news items using NewsAPI/GNews and an LLM.</p>
+        </div>
+      </div>
+      <div class="card-footer text-center text-muted">
+        🚀 Hybrid pipeline: WeLFake style + NewsAPI/GNews + LLM fact-check
+      </div>
+    </div>
+  </div>
+</body>
+</html>
